@@ -953,7 +953,12 @@ func (p *Multipart) AddText(mediaType string, r io.Reader) error {
 	reader := bufio.NewReader(r)
 
 	encoder := quotedprintable.NewWriter(w)
-	defer encoder.Close()
+	defer func() {
+		encoder.Close()
+
+		fmt.Fprintf(w, crlf)
+		fmt.Fprintf(w, crlf)
+	}()
 
 	buffer := make([]byte, maxLineLen)
 	for {
@@ -966,9 +971,6 @@ func (p *Multipart) AddText(mediaType string, r io.Reader) error {
 		}
 		encoder.Write(buffer[:read])
 	}
-
-	fmt.Fprintf(w, crlf)
-	fmt.Fprintf(w, crlf)
 
 	return nil
 }
@@ -1016,6 +1018,12 @@ func (p *Multipart) AddAttachment(attachType AttachmentType, filename, mediaType
 	}
 
 	encoder := base64.NewEncoder(base64.StdEncoding, w)
+
+	defer func() {
+		encoder.Close()
+		fmt.Fprintf(w, crlf)
+	}()
+
 	data := bufio.NewReader(r)
 
 	buffer := make([]byte, int(math.Ceil(maxLineLen/4)*3))
@@ -1037,8 +1045,6 @@ func (p *Multipart) AddAttachment(attachType AttachmentType, filename, mediaType
 			fmt.Fprintf(w, crlf)
 		}
 	}
-	encoder.Close()
-	fmt.Fprintf(w, crlf)
 
 	return nil
 }
